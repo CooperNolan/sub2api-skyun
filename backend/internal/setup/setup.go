@@ -33,6 +33,7 @@ const (
 	defaultMigrationTimeout    = 60 * time.Second
 	postgresBootstrapDatabase  = "postgres"
 	databasePingTimeout        = 5 * time.Second
+	bootstrapAdminUserID       = 1
 )
 
 func setupDefaultAdminConcurrency() int {
@@ -462,8 +463,9 @@ func bootstrapAdminUser(ctx context.Context, db *sql.DB, cfg *SetupConfig) (bool
 
 	_, err = db.ExecContext(
 		ctx,
-		`INSERT INTO users (email, password_hash, role, balance, concurrency, status, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		`INSERT INTO users (id, email, password_hash, role, balance, concurrency, status, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		bootstrapAdminUserID,
 		admin.Email,
 		admin.PasswordHash,
 		admin.Role,

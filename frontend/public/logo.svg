@@ -1,32 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Sub2API</title>
-  <desc id="desc">An interlocking S symbol representing subscription routing into APIs.</desc>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="440" viewBox="0 0 440 440" fill="none">
+  <title>Skyun</title>
   <defs>
-    <linearGradient id="s2a-bg" x1="72" y1="44" x2="442" y2="478" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#142B56"/>
-      <stop offset=".52" stop-color="#0A1A39"/>
-      <stop offset="1" stop-color="#061127"/>
+    <linearGradient id="black-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#15171a"/>
+      <stop offset="100%" stop-color="#292d33"/>
     </linearGradient>
-    <radialGradient id="s2a-ambient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(168 92) rotate(51) scale(342 382)">
-      <stop stop-color="#3E68B0" stop-opacity=".28"/>
-      <stop offset="1" stop-color="#3E68B0" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="s2a-brand" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#79F4BD"/>
-      <stop offset=".48" stop-color="#39D9E7"/>
-      <stop offset="1" stop-color="#3875F6"/>
+    <linearGradient id="blue-gradient" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1764e7"/>
+      <stop offset="100%" stop-color="#24b9ef"/>
     </linearGradient>
-    <filter id="s2a-shadow" x="-25%" y="-25%" width="150%" height="165%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy=".55" stdDeviation=".65" flood-color="#020817" flood-opacity=".34"/>
-    </filter>
   </defs>
-
-  <rect x="16" y="16" width="480" height="480" rx="120" fill="url(#s2a-bg)"/>
-  <rect x="16" y="16" width="480" height="480" rx="120" fill="url(#s2a-ambient)"/>
-  <rect x="16.75" y="16.75" width="478.5" height="478.5" rx="119.25" fill="none" stroke="#A5BFFF" stroke-opacity=".16" stroke-width="1.5"/>
-
-  <g transform="translate(52 52) scale(17)" fill="none" stroke="url(#s2a-brand)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" filter="url(#s2a-shadow)">
-    <path d="m19.25 7.65-2.55-3.2a1.33 1.33 0 0 0-1.03-.5H8.58c-.34 0-.67.13-.91.37L4.15 7.65c-.93.88-.6 1.52.65 2.3l9.55 5.97"/>
-    <path d="m4.75 16.35 2.55 3.2c.25.31.63.5 1.03.5h7.09c.34 0 .67-.13.91-.37l3.52-3.33c.93-.88.6-1.52-.65-2.3L9.65 8.08"/>
+  <g transform="translate(5.8 62.5) scale(1.05)">
+    <path d="M 251,12 242,8 90,8 67,14 51,22 37,33 29,42 23,51 15,70 12,86 13,106 19,126 30,144 43,157 53,164 74,173 90,176 134,176 145,178 152,181 166,195 169,204 169,214 164,226 156,234 143,240 61,240 25,242 13,250 7,262 8,275 11,281 16,286 29,292 153,292 175,287 190,280 204,270 213,261 219,253 227,237 232,215 232,203 229,186 222,169 213,156 195,140 182,133 168,128 153,125 113,125 95,122 88,118 77,106 74,96 74,90 76,81 82,72 92,64 102,60 244,59 252,55 259,48 263,38 262,26 259,20 Z" fill="url(#black-gradient)" fill-rule="evenodd"/>
+    <path d="M 350,60 335,66 247,161 243,168 242,178 247,189 330,282 338,288 350,292 384,292 396,287 402,278 402,269 400,264 316,170 391,88 393,82 392,71 384,63 375,60 Z" fill="url(#blue-gradient)" fill-rule="evenodd"/>
   </g>
 </svg>
