@@ -2080,11 +2080,11 @@ func contentModerationEmailVariables(log *ContentModerationLog, cfg *ContentMode
 
 func (s *ContentModerationService) siteName(ctx context.Context) string {
 	if s == nil || s.settingRepo == nil {
-		return "Sub2API"
+		return "Skyun"
 	}
 	name, err := s.settingRepo.GetValue(ctx, SettingKeySiteName)
 	if err != nil || strings.TrimSpace(name) == "" {
-		return "Sub2API"
+		return "Skyun"
 	}
 	return strings.TrimSpace(name)
 }
