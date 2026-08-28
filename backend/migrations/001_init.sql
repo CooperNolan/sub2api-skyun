@@ -56,6 +56,9 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at);
 
+-- 用户 ID 从非整数量级开始，避免新部署时直接暴露用户规模。
+ALTER SEQUENCE users_id_seq RESTART WITH 3729;
+
 -- 4. accounts 上游账号表（依赖proxies）
 CREATE TABLE IF NOT EXISTS accounts (
     id              BIGSERIAL PRIMARY KEY,
@@ -101,6 +104,9 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_group_id ON api_keys(group_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_status ON api_keys(status);
 CREATE INDEX IF NOT EXISTS idx_api_keys_deleted_at ON api_keys(deleted_at);
+
+-- API Key ID 使用独立的非整数量级起点。
+ALTER SEQUENCE api_keys_id_seq RESTART WITH 6841;
 
 -- 6. account_groups 账号-分组关联表（依赖accounts, groups）
 CREATE TABLE IF NOT EXISTS account_groups (
