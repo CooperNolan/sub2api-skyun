@@ -1,14 +1,15 @@
 <template>
   <div class="plaza-pricing-table overflow-x-auto" :style="accentStyle">
     <table class="w-full min-w-[1000px] table-auto border-collapse text-sm tabular-nums">
+      <!-- 官方价列隐藏时列定义也要移除,否则空列仍占宽,剩余列无法自适应拉伸 -->
       <colgroup>
         <col class="w-[25%]" />
         <col class="w-[11%]" />
         <col class="w-[9%]" />
         <col class="w-[14%]" />
-        <col class="w-[11%]" />
-        <col class="w-[8%]" />
-        <col class="w-[14%]" />
+        <col v-if="false" class="w-[11%]" />
+        <col v-if="false" class="w-[8%]" />
+        <col v-if="false" class="w-[14%]" />
         <col class="w-[8%]" />
       </colgroup>
       <thead>
@@ -28,6 +29,7 @@
             </div>
           </th>
           <th
+            v-show="false"
             colspan="3"
             class="border-l border-gray-100 pt-2 text-center dark:border-dark-700/60"
           >
@@ -49,11 +51,11 @@
           <th class="pz-bg px-3 py-2 font-medium">{{ t('modelPlaza.table.input') }}</th>
           <th class="pz-bg px-3 py-2 font-medium">{{ t('modelPlaza.table.output') }}</th>
           <th class="pz-bg px-3 py-2 font-medium">{{ t('modelPlaza.table.cache') }}</th>
-          <th class="border-l border-gray-100 px-3 py-2 font-medium dark:border-dark-700/60">
+          <th v-show="false" class="border-l border-gray-100 px-3 py-2 font-medium dark:border-dark-700/60">
             {{ t('modelPlaza.table.input') }}
           </th>
-          <th class="px-3 py-2 font-medium">{{ t('modelPlaza.table.output') }}</th>
-          <th class="px-3 py-2 font-medium">{{ t('modelPlaza.table.cache') }}</th>
+          <th v-show="false" class="px-3 py-2 font-medium">{{ t('modelPlaza.table.output') }}</th>
+          <th v-show="false" class="px-3 py-2 font-medium">{{ t('modelPlaza.table.cache') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -210,6 +212,7 @@
 
           <!-- 官方价格(参考价,不乘倍率;官方有阶梯时每档一行) -->
           <td
+            v-show="false"
             class="border-l border-gray-100 px-3 py-2.5 align-middle font-mono text-xs text-gray-500 dark:border-dark-700/60 dark:text-dark-400"
           >
             <template v-if="officialIntervals(m).length">
@@ -224,7 +227,7 @@
             </template>
             <template v-else>{{ official(m.official_pricing?.input_price) }}</template>
           </td>
-          <td class="px-3 py-2.5 align-middle font-mono text-xs text-gray-500 dark:text-dark-400">
+          <td v-show="false" class="px-3 py-2.5 align-middle font-mono text-xs text-gray-500 dark:text-dark-400">
             <template v-if="officialIntervals(m).length">
               <div
                 v-for="(iv, idx) in officialIntervals(m)"
@@ -237,7 +240,7 @@
             </template>
             <template v-else>{{ official(m.official_pricing?.output_price) }}</template>
           </td>
-          <td class="px-3 py-2.5 align-middle">
+          <td v-show="false" class="px-3 py-2.5 align-middle">
             <template v-if="hasTierCachePricing(officialIntervals(m))">
               <div
                 v-for="(iv, idx) in officialIntervals(m)"
@@ -405,8 +408,12 @@ interface PlazaRow {
   key: string
 }
 
+// 行渲染沿用后端返回的组内排序(按名称升序,同名按平台),暂不启用 sortedModels;
+// 通过 void 引用保留原排序实现,便于后续切换或官方同步。
+void sortedModels.value
+
 const rows = computed<PlazaRow[]>(() =>
-  sortedModels.value.flatMap((m) => {
+  props.models.flatMap((m) => {
     const base: PlazaRow = { model: m, period: null, key: `${m.platform}:${m.name}` }
     const periodRows = timePeriods(m).map<PlazaRow>((p, idx) => ({
       model: m,
