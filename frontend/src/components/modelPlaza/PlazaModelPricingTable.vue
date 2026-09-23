@@ -123,10 +123,10 @@
                   class="whitespace-nowrap text-xs leading-5"
                 >
                   <span class="mr-1 font-sans font-normal text-gray-400 dark:text-dark-500" :title="tierHint(m)">{{ tierLabel(iv) }}</span>
-                  {{ paidPerMillion(iv.input_price, period) }}
+                  {{ paidPerMillion(m, iv.input_price, period) }}
                 </div>
               </template>
-              <template v-else>{{ paidPerMillion(m.pricing?.input_price, period) }}</template>
+              <template v-else>{{ paidPerMillion(m, m.pricing?.input_price, period) }}</template>
             </td>
             <td class="pz-cell px-3 py-2.5 align-middle font-mono font-semibold text-gray-900 dark:text-gray-50">
               <template v-if="tokenIntervals(m).length">
@@ -136,10 +136,10 @@
                   class="whitespace-nowrap text-xs leading-5"
                   :title="tierHint(m)"
                 >
-                  {{ paidPerMillion(iv.output_price, period) }}
+                  {{ paidPerMillion(m, iv.output_price, period) }}
                 </div>
               </template>
-              <template v-else>{{ paidPerMillion(m.pricing?.output_price, period) }}</template>
+              <template v-else>{{ paidPerMillion(m, m.pricing?.output_price, period) }}</template>
             </td>
             <td class="pz-cell px-3 py-2.5 align-middle">
               <template v-if="hasTierCachePricing(tokenIntervals(m))">
@@ -151,13 +151,13 @@
                 >
                   <template v-if="iv.cache_write_price != null || iv.cache_write_1h_price != null || iv.cache_read_price != null">
                     <span class="font-sans font-normal text-gray-400 dark:text-dark-500">{{ t('modelPlaza.table.cacheWriteShort') }}</span>
-                    {{ paidPerMillion(iv.cache_write_price, period) }}
+                    {{ paidPerMillion(m, iv.cache_write_price, period) }}
                     <template v-if="iv.cache_write_1h_price != null"
-                      ><span class="font-sans font-normal text-gray-400 dark:text-dark-500"> (1h </span>{{ paidPerMillion(iv.cache_write_1h_price, period)
+                      ><span class="font-sans font-normal text-gray-400 dark:text-dark-500"> (1h </span>{{ paidPerMillion(m, iv.cache_write_1h_price, period)
                       }}<span class="font-sans font-normal text-gray-400 dark:text-dark-500">)</span></template
                     >
                     <span class="ml-1 font-sans font-normal text-gray-400 dark:text-dark-500">{{ t('modelPlaza.table.cacheReadShort') }}</span>
-                    {{ paidPerMillion(iv.cache_read_price, period) }}
+                    {{ paidPerMillion(m, iv.cache_read_price, period) }}
                   </template>
                   <span v-else class="text-gray-400 dark:text-dark-500">-</span>
                 </div>
@@ -168,15 +168,15 @@
               >
                 <div>
                   <span class="mr-1 font-sans font-normal text-gray-400 dark:text-dark-500">{{ t('modelPlaza.table.cacheWrite') }}</span>
-                  {{ paidPerMillion(m.pricing?.cache_write_price, period)
+                  {{ paidPerMillion(m, m.pricing?.cache_write_price, period)
                   }}<template v-if="m.pricing?.cache_write_1h_price != null"
-                    ><span class="font-sans font-normal text-gray-400 dark:text-dark-500"> (1h </span>{{ paidPerMillion(m.pricing.cache_write_1h_price, period)
+                    ><span class="font-sans font-normal text-gray-400 dark:text-dark-500"> (1h </span>{{ paidPerMillion(m, m.pricing?.cache_write_1h_price, period)
                     }}<span class="font-sans font-normal text-gray-400 dark:text-dark-500">)</span></template
                   >
                 </div>
                 <div>
                   <span class="mr-1 font-sans font-normal text-gray-400 dark:text-dark-500">{{ t('modelPlaza.table.cacheRead') }}</span>
-                  {{ paidPerMillion(m.pricing?.cache_read_price, period) }}
+                  {{ paidPerMillion(m, m.pricing?.cache_read_price, period) }}
                 </div>
               </div>
               <span v-else class="text-gray-400 dark:text-dark-500">-</span>
@@ -288,8 +288,8 @@
             <span
               v-if="period"
               class="font-bold text-primary-600 dark:text-primary-400"
-              :title="t('modelPlaza.table.timePricingRateHint', { rate: effectiveRate, multiplier: period.multiplier })"
-              >{{ periodRate(period) }}x</span
+              :title="t('modelPlaza.table.timePricingRateHint', { rate: modelRate(m), multiplier: period.multiplier })"
+              >{{ periodRate(m, period) }}x</span
             >
             <span
               v-else-if="usesIndependentMediaRate(m)"
@@ -297,10 +297,10 @@
               >{{ requestRate(m) }}x</span
             >
             <template v-else-if="hasCustomRate">
-              <span class="mr-1 text-gray-400 line-through dark:text-dark-500">{{ rateMultiplier }}x</span>
-              <span class="font-bold text-primary-600 dark:text-primary-400">{{ effectiveRate }}x</span>
+              <span class="mr-1 text-gray-400 line-through dark:text-dark-500">{{ defaultModelRate(m) }}x</span>
+              <span class="font-bold text-primary-600 dark:text-primary-400">{{ modelRate(m) }}x</span>
             </template>
-            <span v-else class="font-bold text-gray-700 dark:text-gray-300">{{ effectiveRate }}x</span>
+            <span v-else class="font-bold text-gray-700 dark:text-gray-300">{{ modelRate(m) }}x</span>
           </td>
         </tr>
       </tbody>
@@ -388,6 +388,27 @@ const hasCustomRate = computed(
   () => props.userRateMultiplier != null && props.userRateMultiplier !== props.rateMultiplier
 )
 
+/** 倍率统一保留 3 位小数,去掉浮点乘法噪声。 */
+function roundRate(value: number): number {
+  return Math.round(value * 1000) / 1000
+}
+
+/** 渠道定价基础倍率(base_multiplier);未配置/非法值按 1。 */
+function baseRate(m: PlazaModel): number {
+  const base = m.pricing?.base_multiplier
+  return base != null && base > 0 ? base : 1
+}
+
+/** 模型生效倍率 = 基础倍率 × (用户专属 ?? 分组默认),与计费口径一致。 */
+function modelRate(m: PlazaModel): number {
+  return roundRate(baseRate(m) * effectiveRate.value)
+}
+
+/** 专属倍率划线展示的原倍率 = 基础倍率 × 分组默认。 */
+function defaultModelRate(m: PlazaModel): number {
+  return roundRate(baseRate(m) * props.rateMultiplier)
+}
+
 function billingMode(m: PlazaModel): BillingMode {
   return (m.pricing?.billing_mode || BILLING_MODE_TOKEN) as BillingMode
 }
@@ -424,15 +445,15 @@ const rows = computed<PlazaRow[]>(() =>
   })
 )
 
-/** 时段行的生效倍率 = 生效倍率 × 时段倍率(去掉浮点噪声)。 */
-function periodRate(period: PlazaTimePricingPeriod): number {
-  return Math.round(effectiveRate.value * period.multiplier * 1000) / 1000
+/** 时段行的生效倍率 = 模型生效倍率 × 时段倍率。 */
+function periodRate(m: PlazaModel, period: PlazaTimePricingPeriod): number {
+  return Math.round(modelRate(m) * period.multiplier * 1000) / 1000
 }
 
-/** 实付价 = 渠道单价 × 生效倍率(时段行再乘时段倍率),按 $/1M token 展示。 */
-function paidPerMillion(value: number | null | undefined, period: PlazaTimePricingPeriod | null = null): string {
+/** 实付价 = 渠道单价 × 模型生效倍率(时段行再乘时段倍率),按 $/1M token 展示。 */
+function paidPerMillion(m: PlazaModel, value: number | null | undefined, period: PlazaTimePricingPeriod | null = null): string {
   if (value == null) return '-'
-  const rate = period ? periodRate(period) : effectiveRate.value
+  const rate = period ? periodRate(m, period) : modelRate(m)
   return formatScaled(value * rate, PER_MILLION, MIN_DECIMALS)
 }
 
@@ -442,14 +463,14 @@ function usesIndependentMediaRate(m: PlazaModel): boolean {
     (billingMode(m) === BILLING_MODE_VIDEO && props.videoRateIndependent === true)
 }
 
-/** 非 token 行的生效倍率，图片和视频可分别覆盖通用倍率。 */
+/** 非 token 行的生效倍率，图片和视频可分别覆盖通用倍率(独立倍率同样叠加基础倍率)。 */
 function requestRate(m: PlazaModel): number {
   if (billingMode(m) === BILLING_MODE_VIDEO && props.videoRateIndependent === true) {
-    return Math.max(0, props.videoRateMultiplier ?? 1)
+    return Math.max(0, roundRate(baseRate(m) * (props.videoRateMultiplier ?? 1)))
   }
   return billingMode(m) === BILLING_MODE_IMAGE && props.imageRateIndependent === true
-    ? (props.imageRateMultiplier ?? 1)
-    : effectiveRate.value
+    ? roundRate(baseRate(m) * (props.imageRateMultiplier ?? 1))
+    : modelRate(m)
 }
 
 /** 非 token 单价乘该行生效倍率，不换算为每百万 token。 */
