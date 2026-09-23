@@ -45,6 +45,8 @@ export interface UserSupportedModelPricing {
   cache_write_price: number | null
   cache_write_1h_price?: number | null
   cache_read_price: number | null
+  /** 渠道定价条目的基础倍率；缺失 = 1。生效倍率 = base_multiplier × (用户专属 ?? 分组倍率)。 */
+  base_multiplier?: number | null
   reasoning_effort_multipliers?: Record<string, number> | null
   image_input_price: number | null
   image_output_price: number | null

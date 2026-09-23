@@ -41,6 +41,9 @@ type ResolvedPricing struct {
 	// 渠道定价原始配置（用于区间模式下获取 ImageOutputPrice）
 	channelPricing *ChannelModelPricing
 
+	// 价卡（渠道/分组）的基础倍率（未配置为 1）；目录等无价卡来源恒为 1。
+	baseMultiplier float64
+
 	longContextPricingEnabled bool
 }
 
@@ -98,6 +101,7 @@ func (r *ModelPricingResolver) Resolve(ctx context.Context, input PricingInput) 
 					Source:         PricingSourceChannel,
 					channelPricing: chPricing,
 				}
+				resolved.baseMultiplier = channelBaseMultiplier(chPricing)
 				resolved.longContextPricingEnabled = longContextPricingEnabled
 				r.applyRequestTierOverrides(chPricing, resolved)
 				return resolved
@@ -113,6 +117,7 @@ func (r *ModelPricingResolver) Resolve(ctx context.Context, input PricingInput) 
 		BasePricing:            basePricing,
 		Source:                 source,
 		SupportsCacheBreakdown: basePricing != nil && basePricing.SupportsCacheBreakdown,
+		baseMultiplier:         1,
 	}
 	resolved.longContextPricingEnabled = longContextPricingEnabled
 
@@ -120,6 +125,7 @@ func (r *ModelPricingResolver) Resolve(ctx context.Context, input PricingInput) 
 	if chPricing != nil {
 		resolved.Source = PricingSourceChannel
 		resolved.channelPricing = chPricing
+		resolved.baseMultiplier = channelBaseMultiplier(chPricing)
 		r.applyTokenOverrides(chPricing, resolved)
 	} else if input.GroupID != nil && r.channelService != nil {
 		r.applyChannelOverrides(ctx, *input.GroupID, input.Model, resolved)
@@ -133,7 +139,8 @@ func (r *ModelPricingResolver) resolveConfiguredPricing(config *ChannelModelPric
 	if mode == "" {
 		mode = BillingModeToken
 	}
-	resolved := &ResolvedPricing{Mode: mode, Source: source, channelPricing: config}
+	// 价卡基础倍率与扣费 CalculateCostUnified 同源；未配置/非法值归一为 1。
+	resolved := &ResolvedPricing{Mode: mode, Source: source, channelPricing: config, baseMultiplier: channelBaseMultiplier(config)}
 	if mode == BillingModePerRequest || mode == BillingModeImage || mode == BillingModeVideo {
 		r.applyRequestTierOverrides(config, resolved)
 		return resolved
@@ -211,6 +218,7 @@ func (r *ModelPricingResolver) applyChannelOverrides(ctx context.Context, groupI
 
 	resolved.Source = PricingSourceChannel
 	resolved.channelPricing = chPricing
+	resolved.baseMultiplier = channelBaseMultiplier(chPricing)
 	resolved.Mode = chPricing.BillingMode
 	if resolved.Mode == "" {
 		resolved.Mode = BillingModeToken
@@ -281,6 +289,14 @@ func (r *ModelPricingResolver) applyRequestTierOverrides(chPricing *ChannelModel
 	if chPricing.PerRequestPrice != nil {
 		resolved.DefaultPerRequestPrice = *chPricing.PerRequestPrice
 	}
+}
+
+// channelBaseMultiplier 返回价卡（渠道/分组 model_pricing 条目）的基础倍率；未配置或非法值按 1 处理。
+func channelBaseMultiplier(chPricing *ChannelModelPricing) float64 {
+	if chPricing == nil || chPricing.BaseMultiplier == nil || *chPricing.BaseMultiplier <= 0 {
+		return 1
+	}
+	return *chPricing.BaseMultiplier
 }
 
 // filterValidIntervals 过滤掉所有价格字段都为空的无效 interval。

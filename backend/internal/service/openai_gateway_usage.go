@@ -430,6 +430,10 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	} else {
 		usageLog.RateMultiplier = multiplier
 	}
+	// 渠道定价含基础倍率时，日志倍率展示实际应用的下游倍率，与 ActualCost 口径一致。
+	if cost != nil && cost.AppliedRateMultiplier > 0 {
+		usageLog.RateMultiplier = cost.AppliedRateMultiplier
+	}
 	usageLog.AccountRateMultiplier = &accountRateMultiplier
 	usageLog.BillingType = billingType
 	usageLog.Stream = result.Stream

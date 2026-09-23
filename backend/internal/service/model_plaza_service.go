@@ -223,6 +223,7 @@ func (s *ModelPlazaService) ListGroups(ctx context.Context) ([]PlazaGroup, error
 // fillDisplayPricing 把模型的展示定价换成实收口径：
 // token 模型取计费阶梯表（单价与档位均由真实计费函数得出），
 // 图片/按次模型（或阶梯表不可用时）沿用渠道定价与分组图片档位价。
+// 展示用 base 与扣费 Resolve 同源（分组价卡优先于渠道）。
 func (s *ModelPlazaService) fillDisplayPricing(ctx context.Context, m *PlazaModel, g *Group) {
 	if groupPricing := matchGroupModelPricing(g, m.Name); groupPricing != nil {
 		m.Pricing = groupPricing
@@ -243,10 +244,34 @@ func (s *ModelPlazaService) fillDisplayPricing(ctx context.Context, m *PlazaMode
 		}
 	}
 	m.Pricing = plazaImageDisplayPricing(m.Pricing, g)
+	s.alignDisplayBaseMultiplier(ctx, m, g)
+}
+
+// alignDisplayBaseMultiplier 使图片/按次展示 base 与计费 Resolve 同源（分组价卡优先于渠道 raw）。
+func (s *ModelPlazaService) alignDisplayBaseMultiplier(ctx context.Context, m *PlazaModel, g *Group) {
+	if s.resolver == nil || m.Pricing == nil || g == nil {
+		return
+	}
+	gid := g.ID
+	resolved := s.resolver.Resolve(ctx, PricingInput{Model: m.Name, GroupID: &gid, Group: g})
+	if resolved == nil || resolved.baseMultiplier <= 0 {
+		return
+	}
+	if resolved.Source != PricingSourceGroup && resolved.Source != PricingSourceChannel {
+		return
+	}
+	v := resolved.baseMultiplier
+	if m.Pricing.BaseMultiplier != nil && *m.Pricing.BaseMultiplier == v {
+		return
+	}
+	cloned := m.Pricing.Clone()
+	cloned.BaseMultiplier = &v
+	m.Pricing = &cloned
 }
 
 // plazaPricingFromSchedule 把阶梯表压成展示用的 ChannelModelPricing：
 // 平价取首档单价，多档时 Intervals 逐档给出绝对单价；图片/按次字段沿用原始定价。
+// BaseMultiplier 取阶梯表生效 base（与扣费同源），避免分组覆盖渠道后仍显示渠道 raw base。
 func plazaPricingFromSchedule(raw *ChannelModelPricing, sched *ContextPricingSchedule) *ChannelModelPricing {
 	out := &ChannelModelPricing{BillingMode: BillingModeToken}
 	if raw != nil {
@@ -255,6 +280,8 @@ func plazaPricingFromSchedule(raw *ChannelModelPricing, sched *ContextPricingSch
 		out.PerRequestPrice = raw.PerRequestPrice
 		out.ReasoningEffortMultipliers = reasoningEffortMultipliersFromPricing(raw)
 	}
+	v := sched.BaseMultiplier
+	out.BaseMultiplier = &v
 	first := sched.Tiers[0]
 	out.InputPrice = first.Input
 	out.OutputPrice = first.Output

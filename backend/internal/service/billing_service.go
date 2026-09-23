@@ -203,6 +203,7 @@ type CostBreakdown struct {
 	TotalCost                 float64
 	ActualCost                float64 // 应用倍率后的实际费用
 	BillingMode               string  // 计费模式（"token"/"per_request"/"image"），由 CalculateCostUnified 填充
+	AppliedRateMultiplier     float64 // 实际应用的下游倍率（含渠道基础倍率），由 CalculateCostUnified 填充
 	LongContextBillingApplied bool
 }
 
@@ -1460,6 +1461,9 @@ func (s *BillingService) CalculateCostUnified(input CostInput) (*CostBreakdown, 
 		}
 		breakdown := s.computeTokenBreakdown(pricing, input.Tokens, input.RateMultiplier, input.ServiceTier, applyLongContextBilling)
 		applyCostBreakdownMultiplier(breakdown, reasoningEffortBillingMultiplier(input.ReasoningEffort, pricing.ReasoningEffortMultipliers))
+		if breakdown != nil {
+			breakdown.AppliedRateMultiplier = input.RateMultiplier
+		}
 		return breakdown, nil
 	}
 
@@ -1478,6 +1482,11 @@ func (s *BillingService) CalculateCostUnified(input CostInput) (*CostBreakdown, 
 		input.RateMultiplier = 0
 	}
 
+	// 渠道定价基础倍率在此统一注入：仅渠道定价来源携带，叠加在下游倍率之上，对所有计费模式生效。
+	if resolved.baseMultiplier > 0 {
+		input.RateMultiplier *= resolved.baseMultiplier
+	}
+
 	var breakdown *CostBreakdown
 	var err error
 	switch resolved.Mode {
@@ -1494,6 +1503,7 @@ func (s *BillingService) CalculateCostUnified(input CostInput) (*CostBreakdown, 
 		if breakdown.BillingMode == "" {
 			breakdown.BillingMode = string(BillingModeToken)
 		}
+		breakdown.AppliedRateMultiplier = input.RateMultiplier
 	}
 	return breakdown, err
 }

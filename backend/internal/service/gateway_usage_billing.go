@@ -1240,6 +1240,10 @@ func (s *GatewayService) buildRecordUsageLog(
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
 		usageLog.LongContextBillingApplied = cost.LongContextBillingApplied
+		// 渠道定价含基础倍率时，日志倍率展示实际应用的下游倍率，与 ActualCost 口径一致。
+		if cost.AppliedRateMultiplier > 0 {
+			usageLog.RateMultiplier = cost.AppliedRateMultiplier
+		}
 	}
 
 	return usageLog
