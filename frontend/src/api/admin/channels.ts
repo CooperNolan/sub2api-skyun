@@ -48,6 +48,7 @@ export interface ChannelModelPricing {
   cache_write_price: number | null
   cache_write_1h_price?: number | null
   cache_read_price: number | null
+  base_multiplier?: number | null
   fast_multiplier?: number | null
   flex_multiplier?: number | null
   reasoning_effort_multipliers?: Record<string, number> | null
