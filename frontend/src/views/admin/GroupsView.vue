@@ -4341,6 +4341,7 @@ import {
   createDefaultTimePricingForm,
   formIntervalsToAPI,
   formReasoningEffortMultipliersToAPI,
+  isValidPositiveMultiplier,
   mTokToPerToken,
   perTokenToMTok,
   toNullableNumber,
@@ -4422,6 +4423,7 @@ const emptyGroupPricing = (): PricingFormEntry => ({
   cache_write_12h_price: null,
   cache_read_price: null,
   reasoning_effort_multipliers: null,
+  base_multiplier: null,
   image_input_price: null,
   image_output_price: null,
   per_request_price: null,
@@ -4447,6 +4449,7 @@ const groupPricingFromAPI = (
     reasoning_effort_multipliers: entry.reasoning_effort_multipliers
       ? { ...entry.reasoning_effort_multipliers }
       : null,
+    base_multiplier: entry.base_multiplier ?? null,
     image_input_price: perTokenToMTok(entry.image_input_price),
     image_output_price: perTokenToMTok(entry.image_output_price),
     per_request_price: entry.per_request_price,
@@ -4473,6 +4476,10 @@ const groupPricingToAPI = (
       reasoning_effort_multipliers: formReasoningEffortMultipliersToAPI(
         entry.reasoning_effort_multipliers,
       ),
+      base_multiplier:
+        entry.base_multiplier != null && entry.base_multiplier !== ""
+          ? Number(entry.base_multiplier)
+          : null,
       image_input_price: mTokToPerToken(entry.image_input_price),
       image_output_price: mTokToPerToken(entry.image_output_price),
       per_request_price: toNullableNumber(entry.per_request_price),
@@ -5930,9 +5937,24 @@ const validateGroupReasoningMultipliers = (pricing: PricingFormEntry[]): boolean
   return true;
 };
 
+const validateGroupPricingBaseMultipliers = (
+  pricing: PricingFormEntry[],
+): boolean => {
+  for (const entry of pricing) {
+    if (!isValidPositiveMultiplier(entry.base_multiplier)) {
+      appStore.showError(t("admin.channels.form.multiplierPositive"));
+      return false;
+    }
+  }
+  return true;
+};
+
 const handleCreateGroup = async () => {
   if (!createForm.name.trim()) {
     appStore.showError(t("admin.groups.nameRequired"));
+    return;
+  }
+  if (!validateGroupPricingBaseMultipliers(createForm.model_pricing)) {
     return;
   }
   if (
@@ -6273,6 +6295,9 @@ const handleUpdateGroup = async () => {
   if (!editingGroup.value) return;
   if (!editForm.name.trim()) {
     appStore.showError(t("admin.groups.nameRequired"));
+    return;
+  }
+  if (!validateGroupPricingBaseMultipliers(editForm.model_pricing)) {
     return;
   }
   if (

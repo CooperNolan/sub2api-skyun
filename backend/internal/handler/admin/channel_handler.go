@@ -67,6 +67,7 @@ type channelModelPricingRequest struct {
 	CacheWrite1hPrice          *float64                   `json:"cache_write_1h_price" binding:"omitempty,min=0"`
 	CacheWrite12hPrice         *float64                   `json:"cache_write_12h_price" binding:"omitempty,min=0"`
 	CacheReadPrice             *float64                   `json:"cache_read_price" binding:"omitempty,min=0"`
+	BaseMultiplier             *float64                   `json:"base_multiplier" binding:"omitempty,gt=0"`
 	FastMultiplier             *float64                   `json:"fast_multiplier" binding:"omitempty,gt=0"`
 	FlexMultiplier             *float64                   `json:"flex_multiplier" binding:"omitempty,gt=0"`
 	ReasoningEffortMultipliers map[string]float64         `json:"reasoning_effort_multipliers"`
@@ -143,6 +144,7 @@ type channelModelPricingResponse struct {
 	CacheWrite1hPrice          *float64                    `json:"cache_write_1h_price"`
 	CacheWrite12hPrice         *float64                    `json:"cache_write_12h_price"`
 	CacheReadPrice             *float64                    `json:"cache_read_price"`
+	BaseMultiplier             *float64                    `json:"base_multiplier"`
 	FastMultiplier             *float64                    `json:"fast_multiplier"`
 	FlexMultiplier             *float64                    `json:"flex_multiplier"`
 	ReasoningEffortMultipliers map[string]float64          `json:"reasoning_effort_multipliers"`
@@ -275,6 +277,7 @@ func pricingToResponse(p *service.ChannelModelPricing) channelModelPricingRespon
 		CacheWrite1hPrice:          p.CacheWrite1hPrice,
 		CacheWrite12hPrice:         p.CacheWrite12hPrice,
 		CacheReadPrice:             p.CacheReadPrice,
+		BaseMultiplier:             p.BaseMultiplier,
 		FastMultiplier:             p.FastMultiplier,
 		FlexMultiplier:             p.FlexMultiplier,
 		ReasoningEffortMultipliers: p.ReasoningEffortMultipliers,
@@ -361,10 +364,11 @@ func pricingRequestToService(reqs []channelModelPricingRequest, allowChannelMult
 				SortOrder:            iv.SortOrder,
 			})
 		}
-		var fastMultiplier, flexMultiplier *float64
+		var fastMultiplier, flexMultiplier, baseMultiplier *float64
 		if allowChannelMultipliers {
 			fastMultiplier = r.FastMultiplier
 			flexMultiplier = r.FlexMultiplier
+			baseMultiplier = r.BaseMultiplier
 		}
 		result = append(result, service.ChannelModelPricing{
 			Platform:                   platform,
@@ -376,6 +380,7 @@ func pricingRequestToService(reqs []channelModelPricingRequest, allowChannelMult
 			CacheWrite1hPrice:          r.CacheWrite1hPrice,
 			CacheWrite12hPrice:         r.CacheWrite12hPrice,
 			CacheReadPrice:             r.CacheReadPrice,
+			BaseMultiplier:             baseMultiplier,
 			FastMultiplier:             fastMultiplier,
 			FlexMultiplier:             flexMultiplier,
 			ReasoningEffortMultipliers: r.ReasoningEffortMultipliers,
