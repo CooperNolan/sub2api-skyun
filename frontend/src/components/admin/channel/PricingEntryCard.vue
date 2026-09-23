@@ -99,6 +99,15 @@
           </div>
         </div>
 
+        <!-- Base multiplier (stacks with group/user/peak rates; applies to every billing mode) -->
+        <div v-if="!hideBaseMultiplier" class="mt-3 w-44">
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400">
+            {{ t('admin.channels.form.baseMultiplier') }}
+          </label>
+          <input :value="entry.base_multiplier" @input="emitField('base_multiplier', ($event.target as HTMLInputElement).value)"
+            type="number" step="any" min="0.000001" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.baseMultiplierPlaceholder')" />
+        </div>
+
         <!-- Token mode -->
         <div v-if="entry.billing_mode === 'token'">
           <!-- Default prices (fallback when no interval matches) -->
@@ -318,10 +327,12 @@ const props = withDefaults(defineProps<{
   entry: PricingFormEntry
   platform?: string
   hideTokenIntervals?: boolean
+  hideBaseMultiplier?: boolean
   enableTimePricing?: boolean
   enableTierMultipliers?: boolean
 }>(), {
   hideTokenIntervals: false,
+  hideBaseMultiplier: false,
   enableTimePricing: false,
   enableTierMultipliers: false,
 })

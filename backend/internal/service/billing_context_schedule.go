@@ -49,10 +49,12 @@ type TimePricingSchedule struct {
 // ContextPricingSchedule 分组+模型按上下文长度分档的有效单价表。
 // 单价由真实计费函数探针得出，与扣费同源；单档表示无阶梯。
 // Tiers 为标准时段单价；TimePricing 非 nil 时，落在时段内的请求整单再乘对应倍率。
+// BaseMultiplier 为价卡生效基础倍率（展示用）；Tiers 不含 base，消费方用 base × 分组/用户倍率还原实付。
 type ContextPricingSchedule struct {
-	Basis       ContextPricingBasis
-	Tiers       []ContextPricingTier
-	TimePricing *TimePricingSchedule
+	Basis          ContextPricingBasis
+	Tiers          []ContextPricingTier
+	TimePricing    *TimePricingSchedule
+	BaseMultiplier float64
 }
 
 // ContextPricingScheduleInput 阶梯表查询输入。
@@ -103,13 +105,16 @@ func (s *BillingService) ResolveContextPricingSchedule(ctx context.Context, reso
 		return nil, nil
 	}
 
+	// 单价为"倍率前"裸价：CalculateCostUnified 会把 base 折进 RateMultiplier，探针须把 base 归一为 1，防止重复乘。
+	probeResolved := *resolved
+	probeResolved.baseMultiplier = 1
 	req := TokenCostRequest{
 		Ctx:            ctx,
 		Model:          in.Model,
 		Group:          in.Group,
 		RateMultiplier: 1,
 		Resolver:       resolver,
-		Resolved:       resolved,
+		Resolved:       &probeResolved,
 	}
 	probe := func(tokens UsageTokens) (*CostBreakdown, error) {
 		r := req
@@ -131,7 +136,16 @@ func (s *BillingService) ResolveContextPricingSchedule(ctx context.Context, reso
 	tiers = mergeEqualContextTiers(tiers)
 	applyContextTierLabels(tiers, plan)
 
-	return &ContextPricingSchedule{Basis: ContextPricingBasisWholeRequest, Tiers: tiers, TimePricing: resolvedTimePricingSchedule(resolved)}, nil
+	baseMultiplier := resolved.baseMultiplier
+	if baseMultiplier <= 0 {
+		baseMultiplier = 1
+	}
+	return &ContextPricingSchedule{
+		Basis:          ContextPricingBasisWholeRequest,
+		Tiers:          tiers,
+		TimePricing:    resolvedTimePricingSchedule(resolved),
+		BaseMultiplier: baseMultiplier,
+	}, nil
 }
 
 // resolvedTimePricingSchedule 列出计费会生效的分时倍率时段。

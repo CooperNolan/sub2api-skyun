@@ -801,6 +801,7 @@ func checkPricesNotNegative(p ChannelModelPricing) error {
 		field string
 		val   *float64
 	}{
+		{"base_multiplier", p.BaseMultiplier},
 		{"fast_multiplier", p.FastMultiplier},
 		{"flex_multiplier", p.FlexMultiplier},
 	} {
