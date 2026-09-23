@@ -579,6 +579,7 @@
                       :key="pIdx"
                       :entry="entry"
                       :platform="section.platform"
+                      hide-base-multiplier
                       @update="rule.pricing.splice(pIdx, 1, $event)"
                       @remove="removeRulePricingEntry(sIdx, ruleIndex, pIdx)"
                     />
@@ -863,6 +864,7 @@ function addPricingEntry(sectionIdx: number) {
     cache_write_price: null,
     cache_write_1h_price: null,
     cache_read_price: null,
+    base_multiplier: null,
     fast_multiplier: null,
     flex_multiplier: null,
     reasoning_effort_multipliers: null,
@@ -901,6 +903,7 @@ async function syncLatestModels(sectionIdx: number) {
       cache_write_price: null,
       cache_write_1h_price: null,
       cache_read_price: null,
+      base_multiplier: null,
       fast_multiplier: null,
       flex_multiplier: null,
       reasoning_effort_multipliers: null,
@@ -1133,6 +1136,7 @@ function formToAPI(): { group_ids: number[], model_pricing: ChannelModelPricing[
         cache_write_price: mTokToPerToken(entry.cache_write_price),
         cache_write_1h_price: mTokToPerToken(entry.cache_write_1h_price),
         cache_read_price: mTokToPerToken(entry.cache_read_price),
+        base_multiplier: entry.base_multiplier != null && entry.base_multiplier !== '' ? Number(entry.base_multiplier) : null,
         fast_multiplier: entry.fast_multiplier != null && entry.fast_multiplier !== '' ? Number(entry.fast_multiplier) : null,
         flex_multiplier: entry.flex_multiplier != null && entry.flex_multiplier !== '' ? Number(entry.flex_multiplier) : null,
         reasoning_effort_multipliers: formReasoningEffortMultipliersToAPI(entry.reasoning_effort_multipliers),
@@ -1236,6 +1240,7 @@ function apiToForm(channel: Channel): PlatformSection[] {
         cache_write_price: perTokenToMTok(p.cache_write_price),
         cache_write_1h_price: perTokenToMTok(p.cache_write_1h_price),
         cache_read_price: perTokenToMTok(p.cache_read_price),
+        base_multiplier: p.base_multiplier,
         fast_multiplier: p.fast_multiplier,
         flex_multiplier: p.flex_multiplier,
         reasoning_effort_multipliers: p.reasoning_effort_multipliers ? { ...p.reasoning_effort_multipliers } : null,
@@ -1563,7 +1568,8 @@ async function handleSubmit() {
   // 校验区间合法性（范围、重叠等）
   for (const section of form.platforms.filter(s => s.enabled)) {
     for (const entry of section.model_pricing) {
-      if (!isValidPositiveMultiplier(entry.fast_multiplier) ||
+      if (!isValidPositiveMultiplier(entry.base_multiplier) ||
+          !isValidPositiveMultiplier(entry.fast_multiplier) ||
           !isValidPositiveMultiplier(entry.flex_multiplier)) {
         const platformLabel = t('admin.groups.platforms.' + section.platform, section.platform)
         const modelLabel = entry.models.join(', ') || t('admin.channels.form.unnamed')
