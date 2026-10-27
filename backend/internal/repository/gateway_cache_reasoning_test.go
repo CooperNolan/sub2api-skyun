@@ -27,10 +27,10 @@ func TestGatewayCacheReasoningContent(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "think hard", got)
 
-	// ttl<=0 时兜底为默认 7 天。
+	// ttl<=0 时兜底为默认 72 小时。
 	require.NoError(t, cache.SetReasoningContent(ctx, "item_ttl", "x", 0))
 	ttl := mr.TTL(reasoningContentPrefix + "item_ttl")
-	require.Greater(t, ttl, 6*24*time.Hour)
+	require.Equal(t, 72*time.Hour, ttl)
 	require.LessOrEqual(t, ttl, reasoningContentDefaultTTL)
 
 	// 空 itemID / 空 content 是 no-op（无可缓存内容不算错误）。
